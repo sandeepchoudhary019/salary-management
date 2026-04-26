@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/employees': 'http://localhost:3000',
+      '/insights': 'http://localhost:3000',
     },
   },
 })
