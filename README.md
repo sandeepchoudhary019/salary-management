@@ -1,24 +1,36 @@
-# README
+# Salary Management
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+Salary management tool for an organization with 10,000 employees.
 
-Things you may want to cover:
+## Tech Stack
 
-* Ruby version
+- Backend: Ruby on Rails
+- Frontend: React + Vite
+- Database: PostgreSQL
 
-* System dependencies
+## Local Setup
 
-* Configuration
+### Backend (Rails)
 
-* Database creation
+```bash
+bundle install
+bin/rails db:prepare
+bin/rails server
+```
 
-* Database initialization
+Runs at `http://localhost:3000`.
 
-* How to run the test suite
+### Frontend (React)
 
-* Services (job queues, cache servers, search engines, etc.)
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-* Deployment instructions
+Runs at `http://localhost:5173`.
 
-* ...
+## Current Status
+
+- Rails app scaffolded in repository root.
+- React app scaffolded in `frontend/`.
