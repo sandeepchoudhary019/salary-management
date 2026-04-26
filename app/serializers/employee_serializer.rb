@@ -11,4 +11,8 @@ class EmployeeSerializer
       employment_type: employee.employment_type
     }
   end
+
+  def self.as_json_collection(employees)
+    employees.map { |employee| as_json(employee) }
+  end
 end

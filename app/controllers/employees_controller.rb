@@ -2,7 +2,7 @@ class EmployeesController < ActionController::API
   def index
     employees = Employee.order(:id)
 
-    render json: { employees: employees.map { |employee| EmployeeSerializer.as_json(employee) } }, status: :ok
+    render json: { employees: EmployeeSerializer.as_json_collection(employees) }, status: :ok
   end
 
   def create
