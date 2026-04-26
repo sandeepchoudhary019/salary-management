@@ -10,19 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_26_061621) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_26_075200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "employees", force: :cascade do |t|
-    t.string "country"
+    t.string "country", null: false
     t.datetime "created_at", null: false
-    t.string "currency"
+    t.string "currency", default: "USD", null: false
     t.string "department"
     t.string "employment_type"
-    t.string "full_name"
-    t.string "job_title"
-    t.integer "salary_cents"
+    t.string "full_name", null: false
+    t.string "job_title", null: false
+    t.integer "salary_cents", null: false
     t.datetime "updated_at", null: false
+    t.index ["country", "job_title"], name: "index_employees_on_country_and_job_title"
+    t.index ["country"], name: "index_employees_on_country"
+    t.index ["job_title"], name: "index_employees_on_job_title"
+    t.index ["salary_cents"], name: "index_employees_on_salary_cents"
+    t.check_constraint "salary_cents > 0", name: "employees_salary_cents_positive"
   end
 end

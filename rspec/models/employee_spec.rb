@@ -51,4 +51,21 @@ RSpec.describe Employee, type: :model do
     expect(employee).not_to be_valid
     expect(employee.errors[:salary_cents]).to include("must be greater than 0")
   end
+
+  it "defaults currency from country when not provided" do
+    employee.currency = nil
+
+    employee.validate
+
+    expect(employee.currency).to eq("INR")
+  end
+
+  it "falls back to USD when country mapping is unavailable" do
+    employee.country = "France"
+    employee.currency = nil
+
+    employee.validate
+
+    expect(employee.currency).to eq("USD")
+  end
 end
