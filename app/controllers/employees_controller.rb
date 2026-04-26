@@ -2,14 +2,14 @@ class EmployeesController < ActionController::API
   def index
     employees = Employee.order(:id)
 
-    render json: { employees: employees.map { |employee| serialize_employee(employee) } }, status: :ok
+    render json: { employees: employees.map { |employee| EmployeeSerializer.as_json(employee) } }, status: :ok
   end
 
   def create
     employee = Employee.new(employee_params)
 
     if employee.save
-      render json: { employee: serialize_employee(employee) }, status: :created
+      render json: { employee: EmployeeSerializer.as_json(employee) }, status: :created
     else
       render json: { errors: employee.errors.full_messages }, status: :unprocessable_content
     end
@@ -19,7 +19,7 @@ class EmployeesController < ActionController::API
     employee = Employee.find(params[:id])
 
     if employee.update(employee_params)
-      render json: { employee: serialize_employee(employee) }, status: :ok
+      render json: { employee: EmployeeSerializer.as_json(employee) }, status: :ok
     else
       render json: { errors: employee.errors.full_messages }, status: :unprocessable_content
     end
@@ -44,18 +44,5 @@ class EmployeesController < ActionController::API
       :department,
       :employment_type
     )
-  end
-
-  def serialize_employee(employee)
-    {
-      id: employee.id,
-      full_name: employee.full_name,
-      job_title: employee.job_title,
-      country: employee.country,
-      salary_cents: employee.salary_cents,
-      currency: employee.currency,
-      department: employee.department,
-      employment_type: employee.employment_type
-    }
   end
 end
