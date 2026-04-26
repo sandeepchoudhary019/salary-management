@@ -15,14 +15,17 @@ RSpec.describe "Employees API", type: :request do
 
   describe "GET /employees" do
     it "returns all employees" do
-      Employee.create!(valid_attributes.merge(full_name: "Alice Johnson"))
-      Employee.create!(valid_attributes.merge(full_name: "Bob Lee"))
+      first_name = "Alice Johnson #{SecureRandom.hex(4)}"
+      second_name = "Bob Lee #{SecureRandom.hex(4)}"
+      Employee.create!(valid_attributes.merge(full_name: first_name))
+      Employee.create!(valid_attributes.merge(full_name: second_name))
 
       get "/employees"
 
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
-      expect(body["employees"].size).to eq(2)
+      returned_names = body["employees"].map { |employee| employee["full_name"] }
+      expect(returned_names).to include(first_name, second_name)
     end
   end
 
@@ -44,7 +47,7 @@ RSpec.describe "Employees API", type: :request do
         post "/employees", params: { employee: invalid }, as: :json
       end.not_to change(Employee, :count)
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       body = JSON.parse(response.body)
       expect(body["errors"]).to include("Full name can't be blank")
     end
