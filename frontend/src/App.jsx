@@ -1,286 +1,36 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Routes, Route, Link } from 'react-router-dom'
 import './App.css'
-
-const INITIAL_FORM = {
-  full_name: '',
-  job_title: '',
-  country: '',
-  salary_cents: '',
-  currency: 'INR',
-  department: '',
-  employment_type: 'full_time',
-}
+import EmployeesList from './components/EmployeesList'
+import SalaryInsights from './components/SalaryInsights'
 
 function App() {
-  const [employees, setEmployees] = useState([])
-  const [form, setForm] = useState(INITIAL_FORM)
-  const [editingId, setEditingId] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
-  const [insightsCountry, setInsightsCountry] = useState('India')
-  const [insightsJobTitle, setInsightsJobTitle] = useState('Engineer')
-  const [countryMetrics, setCountryMetrics] = useState(null)
-  const [titleMetrics, setTitleMetrics] = useState(null)
-
-  const title = useMemo(() => (editingId ? 'Update employee' : 'Add employee'), [editingId])
-
-  const loadEmployees = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const response = await fetch('/employees')
-      if (!response.ok) throw new Error('Failed to load employees')
-      const data = await response.json()
-      setEmployees(data.employees || [])
-    } catch (requestError) {
-      setError(requestError.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    loadEmployees()
-  }, [])
-
-  const handleChange = (event) => {
-    const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
-  }
-
-  const clearForm = () => {
-    setForm(INITIAL_FORM)
-    setEditingId(null)
-  }
-
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    setError('')
-    setSuccessMessage('')
-
-    const payload = { ...form, salary_cents: Number(form.salary_cents) }
-    const isEditing = Boolean(editingId)
-    const endpoint = isEditing ? `/employees/${editingId}` : '/employees'
-    const method = isEditing ? 'PATCH' : 'POST'
-
-    const response = await fetch(endpoint, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employee: payload }),
-    })
-
-    const data = await response.json().catch(() => ({}))
-    if (!response.ok) {
-      setError((data.errors || ['Unable to save employee']).join(', '))
-      return
-    }
-
-    setSuccessMessage(isEditing ? 'Employee updated.' : 'Employee created.')
-    clearForm()
-    loadEmployees()
-  }
-
-  const handleEdit = (employee) => {
-    setEditingId(employee.id)
-    setForm({
-      full_name: employee.full_name || '',
-      job_title: employee.job_title || '',
-      country: employee.country || '',
-      salary_cents: String(employee.salary_cents ?? ''),
-      currency: employee.currency || 'INR',
-      department: employee.department || '',
-      employment_type: employee.employment_type || 'full_time',
-    })
-  }
-
-  const handleDelete = async (employeeId) => {
-    setError('')
-    setSuccessMessage('')
-    const response = await fetch(`/employees/${employeeId}`, { method: 'DELETE' })
-    if (!response.ok) {
-      setError('Unable to delete employee')
-      return
-    }
-
-    setSuccessMessage('Employee deleted.')
-    loadEmployees()
-  }
-
-  const fetchInsights = async () => {
-    setError('')
-    setSuccessMessage('')
-
-    try {
-      const countryResponse = await fetch(`/insights/country/${encodeURIComponent(insightsCountry)}`)
-      if (!countryResponse.ok) throw new Error('Unable to load country insights')
-      const countryData = await countryResponse.json()
-
-      const titleResponse = await fetch(
-        `/insights/country/${encodeURIComponent(insightsCountry)}/job_title/${encodeURIComponent(insightsJobTitle)}`,
-      )
-      if (!titleResponse.ok) throw new Error('Unable to load title insights')
-      const titleData = await titleResponse.json()
-
-      setCountryMetrics(countryData)
-      setTitleMetrics(titleData)
-    } catch (requestError) {
-      setError(requestError.message)
-    }
-  }
-
   return (
-    <main className="container">
-      <header className="header">
-        <h1>Salary Management</h1>
-        <p>Manage employees and salary data.</p>
-      </header>
-
-      {error && <p className="message error">{error}</p>}
-      {successMessage && <p className="message success">{successMessage}</p>}
-
-      <section className="panel">
-        <h2>{title}</h2>
-        <form onSubmit={handleSubmit} className="employee-form">
-          <label>
-            Full name
-            <input name="full_name" value={form.full_name} onChange={handleChange} required />
-          </label>
-          <label>
-            Job title
-            <input name="job_title" value={form.job_title} onChange={handleChange} required />
-          </label>
-          <label>
-            Country
-            <input name="country" value={form.country} onChange={handleChange} required />
-          </label>
-          <label>
-            Salary (cents)
-            <input
-              name="salary_cents"
-              type="number"
-              min="1"
-              value={form.salary_cents}
-              onChange={handleChange}
-              required
-            />
-          </label>
-          <label>
-            Currency
-            <input name="currency" value={form.currency} onChange={handleChange} />
-          </label>
-          <label>
-            Department
-            <input name="department" value={form.department} onChange={handleChange} />
-          </label>
-          <label>
-            Employment type
-            <select name="employment_type" value={form.employment_type} onChange={handleChange}>
-              <option value="full_time">Full-time</option>
-              <option value="contract">Contract</option>
-              <option value="part_time">Part-time</option>
-            </select>
-          </label>
-
-          <div className="actions">
-            <button type="submit">{editingId ? 'Update' : 'Create'}</button>
-            {editingId && (
-              <button type="button" className="secondary" onClick={clearForm}>
-                Cancel
-              </button>
-            )}
-          </div>
-        </form>
-      </section>
-
-      <section className="panel">
-        <h2>Employees</h2>
-        {loading ? (
-          <p>Loading employees...</p>
-        ) : (
-          <table className="employees-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Title</th>
-                <th>Country</th>
-                <th>Salary (cents)</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((employee) => (
-                <tr key={employee.id}>
-                  <td>{employee.full_name}</td>
-                  <td>{employee.job_title}</td>
-                  <td>{employee.country}</td>
-                  <td>{employee.salary_cents}</td>
-                  <td className="row-actions">
-                    <button type="button" className="secondary" onClick={() => handleEdit(employee)}>
-                      Edit
-                    </button>
-                    <button type="button" className="danger" onClick={() => handleDelete(employee.id)}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {employees.length === 0 && (
-                <tr>
-                  <td colSpan={5}>No employees yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </section>
-
-      <section className="panel">
-        <h2>Salary Insights</h2>
-        <div className="insights-controls">
-          <label>
-            Country
-            <input value={insightsCountry} onChange={(event) => setInsightsCountry(event.target.value)} />
-          </label>
-          <label>
-            Job title
-            <input value={insightsJobTitle} onChange={(event) => setInsightsJobTitle(event.target.value)} />
-          </label>
-          <button type="button" onClick={fetchInsights}>
-            Load insights
-          </button>
+    <>
+      <nav className="navbar">
+        <div className="nav-container">
+          <Link to="/" className="nav-brand">
+            Salary Management
+          </Link>
+          <ul className="nav-menu">
+            <li>
+              <Link to="/" className="nav-link">
+                Employees
+              </Link>
+            </li>
+            <li>
+              <Link to="/insights" className="nav-link">
+                Insights
+              </Link>
+            </li>
+          </ul>
         </div>
+      </nav>
 
-        <div className="insights-grid">
-          <article className="insight-card">
-            <h3>Country Metrics</h3>
-            {countryMetrics ? (
-              <ul>
-                <li>Employees: {countryMetrics.employee_count}</li>
-                <li>Min salary: {countryMetrics.min_salary_cents ?? '-'}</li>
-                <li>Max salary: {countryMetrics.max_salary_cents ?? '-'}</li>
-                <li>Avg salary: {countryMetrics.avg_salary_cents ?? '-'}</li>
-              </ul>
-            ) : (
-              <p>Load insights to view country metrics.</p>
-            )}
-          </article>
-
-          <article className="insight-card">
-            <h3>Job Title in Country</h3>
-            {titleMetrics ? (
-              <ul>
-                <li>Job title: {titleMetrics.job_title}</li>
-                <li>Employees: {titleMetrics.employee_count}</li>
-                <li>Avg salary: {titleMetrics.avg_salary_cents ?? '-'}</li>
-              </ul>
-            ) : (
-              <p>Load insights to view title metrics.</p>
-            )}
-          </article>
-        </div>
-      </section>
-    </main>
+      <Routes>
+        <Route path="/" element={<EmployeesList />} />
+        <Route path="/insights" element={<SalaryInsights />} />
+      </Routes>
+    </>
   )
 }
 
