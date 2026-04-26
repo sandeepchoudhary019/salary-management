@@ -34,3 +34,11 @@ Runs at `http://localhost:5173`.
 
 - Rails app scaffolded in repository root.
 - React app scaffolded in `frontend/`.
+
+## Documentation
+
+See `docs/` for detailed project artifacts:
+
+- `docs/architecture.md` — system design and key decisions
+- `docs/tradeoffs.md` — skipped items and tradeoff reasoning
+- `docs/performance-notes.md` — seed strategy and query choices
