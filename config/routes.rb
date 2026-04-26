@@ -1,5 +1,7 @@
 Rails.application.routes.draw do
   resources :employees, only: [ :index, :create, :update, :destroy ]
+  get "insights/country/:country", to: "insights#country"
+  get "insights/country/:country/job_title/:job_title", to: "insights#job_title"
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
