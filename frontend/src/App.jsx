@@ -1,121 +1,219 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
+const INITIAL_FORM = {
+  full_name: '',
+  job_title: '',
+  country: '',
+  salary_cents: '',
+  currency: 'INR',
+  department: '',
+  employment_type: 'full_time',
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [employees, setEmployees] = useState([])
+  const [form, setForm] = useState(INITIAL_FORM)
+  const [editingId, setEditingId] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+
+  const title = useMemo(() => (editingId ? 'Update employee' : 'Add employee'), [editingId])
+
+  const loadEmployees = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const response = await fetch('/employees')
+      if (!response.ok) throw new Error('Failed to load employees')
+      const data = await response.json()
+      setEmployees(data.employees || [])
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadEmployees()
+  }, [])
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setForm((current) => ({ ...current, [name]: value }))
+  }
+
+  const clearForm = () => {
+    setForm(INITIAL_FORM)
+    setEditingId(null)
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setError('')
+    setSuccessMessage('')
+
+    const payload = { ...form, salary_cents: Number(form.salary_cents) }
+    const isEditing = Boolean(editingId)
+    const endpoint = isEditing ? `/employees/${editingId}` : '/employees'
+    const method = isEditing ? 'PATCH' : 'POST'
+
+    const response = await fetch(endpoint, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee: payload }),
+    })
+
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      setError((data.errors || ['Unable to save employee']).join(', '))
+      return
+    }
+
+    setSuccessMessage(isEditing ? 'Employee updated.' : 'Employee created.')
+    clearForm()
+    loadEmployees()
+  }
+
+  const handleEdit = (employee) => {
+    setEditingId(employee.id)
+    setForm({
+      full_name: employee.full_name || '',
+      job_title: employee.job_title || '',
+      country: employee.country || '',
+      salary_cents: String(employee.salary_cents ?? ''),
+      currency: employee.currency || 'INR',
+      department: employee.department || '',
+      employment_type: employee.employment_type || 'full_time',
+    })
+  }
+
+  const handleDelete = async (employeeId) => {
+    setError('')
+    setSuccessMessage('')
+    const response = await fetch(`/employees/${employeeId}`, { method: 'DELETE' })
+    if (!response.ok) {
+      setError('Unable to delete employee')
+      return
+    }
+
+    setSuccessMessage('Employee deleted.')
+    loadEmployees()
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+    <main className="container">
+      <header className="header">
+        <h1>Salary Management</h1>
+        <p>Manage employees and salary data.</p>
+      </header>
+
+      {error && <p className="message error">{error}</p>}
+      {successMessage && <p className="message success">{successMessage}</p>}
+
+      <section className="panel">
+        <h2>{title}</h2>
+        <form onSubmit={handleSubmit} className="employee-form">
+          <label>
+            Full name
+            <input name="full_name" value={form.full_name} onChange={handleChange} required />
+          </label>
+          <label>
+            Job title
+            <input name="job_title" value={form.job_title} onChange={handleChange} required />
+          </label>
+          <label>
+            Country
+            <input name="country" value={form.country} onChange={handleChange} required />
+          </label>
+          <label>
+            Salary (cents)
+            <input
+              name="salary_cents"
+              type="number"
+              min="1"
+              value={form.salary_cents}
+              onChange={handleChange}
+              required
+            />
+          </label>
+          <label>
+            Currency
+            <input name="currency" value={form.currency} onChange={handleChange} />
+          </label>
+          <label>
+            Department
+            <input name="department" value={form.department} onChange={handleChange} />
+          </label>
+          <label>
+            Employment type
+            <select name="employment_type" value={form.employment_type} onChange={handleChange}>
+              <option value="full_time">Full-time</option>
+              <option value="contract">Contract</option>
+              <option value="part_time">Part-time</option>
+            </select>
+          </label>
+
+          <div className="actions">
+            <button type="submit">{editingId ? 'Update' : 'Create'}</button>
+            {editingId && (
+              <button type="button" className="secondary" onClick={clearForm}>
+                Cancel
+              </button>
+            )}
+          </div>
+        </form>
       </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
+      <section className="panel">
+        <h2>Employees</h2>
+        {loading ? (
+          <p>Loading employees...</p>
+        ) : (
+          <table className="employees-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Title</th>
+                <th>Country</th>
+                <th>Salary (cents)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {employees.map((employee) => (
+                <tr key={employee.id}>
+                  <td>{employee.full_name}</td>
+                  <td>{employee.job_title}</td>
+                  <td>{employee.country}</td>
+                  <td>{employee.salary_cents}</td>
+                  <td className="row-actions">
+                    <button type="button" className="secondary" onClick={() => handleEdit(employee)}>
+                      Edit
+                    </button>
+                    <button type="button" className="danger" onClick={() => handleDelete(employee.id)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {employees.length === 0 && (
+                <tr>
+                  <td colSpan={5}>No employees yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <section className="panel">
+        <h2>Salary Insights</h2>
+        <p>Insights dashboard will be added in the next commit.</p>
+      </section>
+    </main>
   )
 }
 
